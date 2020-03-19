@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">TestAddApplication</string>
+    <string name="button_showAd">Show the ad</string>
+</resources>
