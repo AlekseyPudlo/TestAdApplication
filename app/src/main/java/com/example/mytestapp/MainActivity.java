@@ -2,14 +2,16 @@ package com.example.mytestapp;
 
 import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.test.espresso.IdlingResource;
 
 import com.smaato.sdk.banner.ad.BannerAdSize;
 import com.smaato.sdk.banner.widget.BannerError;
@@ -21,10 +23,21 @@ import com.smaato.sdk.core.log.LogLevel;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String publisherId = "1100042525";
-    private static final String adspaceId = "130635694";
-    private final BannerAdSize bannerAdSize = BannerAdSize.MEDIUM_RECTANGLE_300x250;
+    private static final String PUBLISHER_ID = "1100042525";
+    private static final String ADSPACE_ID = "130635694";
+    private static final BannerAdSize BANNER_AD_SIZE = BannerAdSize.MEDIUM_RECTANGLE_300x250;
     private BannerView bannerView;
+
+    private Boolean isAdLoaded = false;
+
+
+    // The Idling Resource which will be null in production.
+    @Nullable
+    private SimpleIdlingResource mIdlingResource;
+
+    public Boolean getAdLoaded() {
+        return isAdLoaded;
+    }
 
 
     @SuppressLint("ClickableViewAccessibility")
@@ -40,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
                 .setAdContentRating(AdContentRating.MAX_AD_CONTENT_RATING_MA)
                 .build();
 
-        SmaatoSdk.init(getApplication(), config, publisherId);
+        SmaatoSdk.init(getApplication(), config, PUBLISHER_ID);
 
         setContentView(R.layout.activity_main);
 
@@ -49,8 +62,7 @@ public class MainActivity extends AppCompatActivity {
         bannerView.setEventListener(new BannerView.EventListener() {
             @Override
             public void onAdLoaded(@NonNull BannerView bannerView) {
-                System.out.println("***********  Loaded ***************");
-                System.out.println("bannerView.getAdSpaceId: " + bannerView.getAdSpaceId());
+                isAdLoaded = true;
             }
             @Override
             public void onAdFailedToLoad(@NonNull BannerView bannerView, @NonNull BannerError bannerError) {
@@ -68,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void showAd(View view) {
-        bannerView.loadAd(adspaceId, bannerAdSize);
+        bannerView.loadAd(ADSPACE_ID, BANNER_AD_SIZE);
     }
 
     private void setGDPRConsent() {
@@ -85,5 +97,18 @@ public class MainActivity extends AppCompatActivity {
     public void onDestroy() {
         super.onDestroy();
         bannerView.destroy();
+    }
+
+
+    /**
+     * Only called from test, creates and returns a new {@link SimpleIdlingResource}.
+     */
+    @VisibleForTesting
+    @NonNull
+    public IdlingResource getIdlingResource() {
+        if (mIdlingResource == null) {
+            mIdlingResource = new SimpleIdlingResource();
+        }
+        return mIdlingResource;
     }
 }

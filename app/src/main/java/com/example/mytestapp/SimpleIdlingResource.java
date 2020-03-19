@@ -1,36 +1,42 @@
 package com.example.mytestapp;
 
+import androidx.annotation.Nullable;
 import androidx.test.espresso.IdlingResource;
 
-public class ElapsedTimeIdlingResource implements IdlingResource {
-    private final long startTime;
-    private final long waitingTime;
-    private ResourceCallback resourceCallback;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-    public ElapsedTimeIdlingResource(long waitingTime) {
-        this.startTime = System.currentTimeMillis();
-        this.waitingTime = waitingTime;
-    }
+public class SimpleIdlingResource implements IdlingResource {
+
+    @Nullable
+    private volatile ResourceCallback mCallback;
+
+    // Idleness is controlled with this boolean.
+    private AtomicBoolean mIsIdleNow = new AtomicBoolean(true);
 
     @Override
     public String getName() {
-        return ElapsedTimeIdlingResource.class.getName() + ":" + waitingTime;
+        return this.getClass().getName();
     }
 
     @Override
     public boolean isIdleNow() {
-        long elapsed = System.currentTimeMillis() - startTime;
-        boolean idle = (elapsed >= waitingTime);
-        if (idle) {
-            resourceCallback.onTransitionToIdle();
-        }
-        return idle;
+        return mIsIdleNow.get();
     }
 
     @Override
-    public void registerIdleTransitionCallback(
-            ResourceCallback resourceCallback) {
-        this.resourceCallback = resourceCallback;
+    public void registerIdleTransitionCallback(ResourceCallback callback) {
+        mCallback = callback;
+    }
+
+    /**
+     * Sets the new idle state, if isIdleNow is true, it pings the {@link ResourceCallback}.
+     * @param isIdleNow false if there are pending operations, true if idle.
+     */
+    public void setIdleState(boolean isIdleNow) {
+        mIsIdleNow.set(isIdleNow);
+        if (isIdleNow && mCallback != null) {
+            mCallback.onTransitionToIdle();
+        }
     }
 
 }
